@@ -87,6 +87,11 @@ local function OneClickStorage(container, include_floor_items)
             return
         end
 
+        -- 排除便携地窖（永远不要把便携地窖当作存储目标物品）
+        if item.prefab == "portablecellar" then
+            return
+        end
+
         -- 排除当前目标容器本身（避免把容器放进自己里面）
         if item == container then
             return
