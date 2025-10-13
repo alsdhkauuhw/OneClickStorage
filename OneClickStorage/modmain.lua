@@ -37,8 +37,8 @@ local function IsValidContainer(target)
         return true
     end
 
-    -- 检查是否是原版箱子
-    if support_chest and target.prefab == "treasurechest" then
+    -- 检查是否是原版箱子 (treasure_chest 是原版箱子的prefab名)
+    if support_chest and target.prefab == "treasure_chest" then
         return true
     end
 
@@ -77,7 +77,7 @@ local function OneClickStorage(container, include_floor_items)
     local is_full = false
 
     -- 存储物品的函数
-    local function StoreItem(item, slot_num)
+    local function StoreItem(item, source_container, slot_num)
         if not item or not item_types[item.prefab] then
             return
         end
@@ -87,17 +87,24 @@ local function OneClickStorage(container, include_floor_items)
             return
         end
 
+        -- 排除当前目标容器本身（避免把容器放进自己里面）
+        if item == container then
+            return
+        end
+
         -- 可堆叠物品的处理
         if item.components.stackable then
             if not container.components.container:IsFull() then
                 CreateFx(container, "statue_transition_2", {218,112,214})
-                if slot_num then
+                if source_container and slot_num then
+                    -- 从玩家物品栏或背包中移除
                     container.components.container:GiveItem(
-                        player.components.inventory:RemoveItemBySlot(slot_num),
+                        source_container:RemoveItemBySlot(slot_num),
                         nil,
                         Vector3(TheSim:GetScreenPos(player.Transform:GetWorldPosition()))
                     )
                 else
+                    -- 从地面拾取
                     container.components.container:GiveItem(
                         item,
                         nil,
@@ -111,9 +118,9 @@ local function OneClickStorage(container, include_floor_items)
                     if v and v.prefab == item.prefab and v.components.stackable and not v.components.stackable:IsFull() then
                         local space_left = v.components.stackable.maxsize - v.components.stackable.stacksize
                         if space_left >= item.components.stackable.stacksize then
-                            if slot_num then
+                            if source_container and slot_num then
                                 container.components.container:GiveItem(
-                                    player.components.inventory:RemoveItemBySlot(slot_num),
+                                    source_container:RemoveItemBySlot(slot_num),
                                     nil,
                                     Vector3(TheSim:GetScreenPos(player.Transform:GetWorldPosition()))
                                 )
@@ -138,7 +145,7 @@ local function OneClickStorage(container, include_floor_items)
                                 nil,
                                 Vector3(TheSim:GetScreenPos(player.Transform:GetWorldPosition()))
                             )
-                            if slot_num then
+                            if source_container and slot_num then
                                 player.components.inventory:ConsumeByName(item.prefab, space_left)
                             else
                                 item.components.stackable.stacksize = item.components.stackable.stacksize - space_left
@@ -154,9 +161,9 @@ local function OneClickStorage(container, include_floor_items)
             -- 不可堆叠物品
             if not container.components.container:IsFull() then
                 CreateFx(container, "statue_transition_2", {218,112,214})
-                if slot_num then
+                if source_container and slot_num then
                     container.components.container:GiveItem(
-                        player.components.inventory:RemoveItemBySlot(slot_num),
+                        source_container:RemoveItemBySlot(slot_num),
                         nil,
                         Vector3(TheSim:GetScreenPos(player.Transform:GetWorldPosition()))
                     )
@@ -177,7 +184,7 @@ local function OneClickStorage(container, include_floor_items)
     -- 1. 处理玩家物品栏
     local player_slots = player.components.inventory.itemslots
     for slot_num, item in pairs(player_slots) do
-        StoreItem(item, slot_num)
+        StoreItem(item, player.components.inventory, slot_num)
     end
 
     -- 2. 处理玩家背包
@@ -186,7 +193,7 @@ local function OneClickStorage(container, include_floor_items)
     if backpack and backpack.components.container then
         local backpack_slots = backpack.components.container.slots
         for slot_num, item in pairs(backpack_slots) do
-            StoreItem(item, slot_num)
+            StoreItem(item, backpack.components.container, slot_num)
         end
     end
 
@@ -199,7 +206,7 @@ local function OneClickStorage(container, include_floor_items)
                item.prefab ~= "super_package" and
                item.prefab ~= "fireflies" and
                not item.components.health then
-                StoreItem(item, nil)
+                StoreItem(item, nil, nil)
             end
         end
     end
@@ -235,14 +242,14 @@ AddPlayerPostInit(function(inst)
 
             local containers_found = {}
 
-            -- 收集所有有效的容器
+            -- 1. 收集地面上的容器
             for _, ent in pairs(ents) do
                 if IsValidContainer(ent) then
                     table.insert(containers_found, ent)
                 end
             end
 
-            -- 检查物品栏中的便携地窖
+            -- 2. 收集物品栏中的便携地窖
             if support_portablecellar then
                 local player_slots = player.components.inventory.itemslots
                 for _, item in pairs(player_slots) do
@@ -251,7 +258,7 @@ AddPlayerPostInit(function(inst)
                     end
                 end
 
-                -- 检查背包中的便携地窖
+                -- 3. 收集背包中的便携地窖
                 local backpack = player.components.inventory.equipslots[EQUIPSLOTS.BACK] or
                                  player.components.inventory.equipslots[EQUIPSLOTS.BODY]
                 if backpack and backpack.components.container then
