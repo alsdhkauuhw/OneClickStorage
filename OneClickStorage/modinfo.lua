@@ -1,5 +1,5 @@
 name = "One Click Storage"
-description = "一键入箱 - 自动将物品存入附近的箱子\n\n支持:\n- Portable Cellar (便携地窖)\n- 原版箱子 (Chest)\n- 原版冰箱 (Ice Box)\n\nOne Click Storage - Automatically store items into nearby containers\n\nSupports:\n- Portable Cellar\n- Vanilla Chest\n- Vanilla Ice Box\n\nv1.0"
+description = "一键入箱(1.0.1) - 自动将物品存入附近的箱子\n\n支持:\n- Portable Cellar (便携地窖)\n- 原版箱子 (Chest)\n- 原版冰箱 (Ice Box)\n\nOne Click Storage - Automatically store items into nearby containers\n\nSupports:\n- Portable Cellar\n- Vanilla Chest\n- Vanilla Ice Box\n\nv1.0"
 author = "大胜利"
 version = "1.0.1"
 forumthread = ""
