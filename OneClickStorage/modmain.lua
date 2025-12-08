@@ -37,8 +37,8 @@ local function IsValidContainer(target)
         return true
     end
 
-    -- 检查是否是原版箱子 (treasure_chest 是原版箱子的prefab名)
-    if support_chest and target.prefab == "treasure_chest" then
+    -- 检查是否是原版箱子 (treasurechest 是原版箱子的prefab名，不带下划线)
+    if support_chest and target.prefab == "treasurechest" then
         return true
     end
 
