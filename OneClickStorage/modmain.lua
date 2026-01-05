@@ -8,6 +8,7 @@ local include_floor = GetModConfigData("include_floor")
 local support_portablecellar = GetModConfigData("support_portablecellar")
 local support_chest = GetModConfigData("support_chest")
 local support_icebox = GetModConfigData("support_icebox")
+local only_floor_items = GetModConfigData("only_floor_items")
 
 -- 按键映射表
 local key_map = {
@@ -187,18 +188,22 @@ local function OneClickStorage(container, include_floor_items)
     end
 
     -- 1. 处理玩家物品栏
-    local player_slots = player.components.inventory.itemslots
-    for slot_num, item in pairs(player_slots) do
-        StoreItem(item, player.components.inventory, slot_num)
+    if not only_floor_items then
+        local player_slots = player.components.inventory.itemslots
+        for slot_num, item in pairs(player_slots) do
+            StoreItem(item, player.components.inventory, slot_num)
+        end
     end
 
     -- 2. 处理玩家背包
-    local backpack = player.components.inventory.equipslots[EQUIPSLOTS.BACK] or
-                     player.components.inventory.equipslots[EQUIPSLOTS.BODY]
-    if backpack and backpack.components.container then
-        local backpack_slots = backpack.components.container.slots
-        for slot_num, item in pairs(backpack_slots) do
-            StoreItem(item, backpack.components.container, slot_num)
+    if not only_floor_items then
+        local backpack = player.components.inventory.equipslots[EQUIPSLOTS.BACK] or
+                         player.components.inventory.equipslots[EQUIPSLOTS.BODY]
+        if backpack and backpack.components.container then
+            local backpack_slots = backpack.components.container.slots
+            for slot_num, item in pairs(backpack_slots) do
+                StoreItem(item, backpack.components.container, slot_num)
+            end
         end
     end
 
@@ -255,7 +260,7 @@ AddPlayerPostInit(function(inst)
             end
 
             -- 2. 收集物品栏中的便携地窖
-            if support_portablecellar then
+            if support_portablecellar and not only_floor_items then
                 local player_slots = player.components.inventory.itemslots
                 for _, item in pairs(player_slots) do
                     if item and item.prefab == "portablecellar" then

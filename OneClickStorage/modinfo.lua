@@ -1,7 +1,7 @@
 name = "One Click Storage"
-description = "一键入箱(1.0.2) - 自动将物品存入附近的箱子\n\n支持:\n- Portable Cellar (便携地窖)\n- 原版箱子 (Chest)\n- 原版冰箱 (Ice Box)\n\nOne Click Storage - Automatically store items into nearby containers\n\nSupports:\n- Portable Cellar\n- Vanilla Chest\n- Vanilla Ice Box\n\nv1.0"
+description = "一键入箱(1.0.3) - 自动将物品存入附近的箱子\n\n支持:\n- Portable Cellar (便携地窖)\n- 原版箱子 (Chest)\n- 原版冰箱 (Ice Box)\n\nOne Click Storage - Automatically store items into nearby containers\n\nSupports:\n- Portable Cellar\n- Vanilla Chest\n- Vanilla Ice Box\n\nv1.0"
 author = "大胜利"
-version = "1.0.2"
+version = "1.0.3"
 forumthread = ""
 api_version = 6
 
@@ -96,5 +96,15 @@ configuration_options = {
         },
         default = true,
         hover = "是否支持原版冰箱 Whether to support vanilla ice box"
+    },
+    {
+        name = "only_floor_items",
+        label = "只存放地面物品 Only Store Floor Items",
+        options = {
+            {description = "是 Yes", data = true},
+            {description = "否 No", data = false}
+        },
+        default = false,
+        hover = "启用后，仅自动存放地面上的物品，不存放背包和物品栏中的物品 When enabled, only store items on the ground, not items in inventory or backpack"
     }
 }
