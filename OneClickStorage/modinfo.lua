@@ -33,7 +33,19 @@ local key_options = {
     {description = "K", data = "K"},
     {description = "L", data = "L"},
     {description = "O", data = "O"},
-    {description = "P", data = "P"}
+    {description = "P", data = "P"},
+    {description = "F1", data = "F1"},
+    {description = "F2", data = "F2"},
+    {description = "F3", data = "F3"},
+    {description = "F4", data = "F4"},
+    {description = "F5", data = "F5"},
+    {description = "F6", data = "F6"},
+    {description = "F7", data = "F7"},
+    {description = "F8", data = "F8"},
+    {description = "F9", data = "F9"},
+    {description = "F10", data = "F10"},
+    {description = "F11", data = "F11"},
+    {description = "F12", data = "F12"}
 }
 
 configuration_options = {

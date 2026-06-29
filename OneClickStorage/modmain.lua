@@ -115,7 +115,10 @@ local key_map = {
     R = KEY_R, T = KEY_T, Y = KEY_Y, U = KEY_U,
     G = KEY_G, H = KEY_H, J = KEY_J, Z = KEY_Z,
     X = KEY_X, C = KEY_C, V = KEY_V, B = KEY_B,
-    N = KEY_N, K = KEY_K, L = KEY_L, O = KEY_O, P = KEY_P
+    N = KEY_N, K = KEY_K, L = KEY_L, O = KEY_O, P = KEY_P,
+    F1 = KEY_F1, F2 = KEY_F2, F3 = KEY_F3, F4 = KEY_F4,
+    F5 = KEY_F5, F6 = KEY_F6, F7 = KEY_F7, F8 = KEY_F8,
+    F9 = KEY_F9, F10 = KEY_F10, F11 = KEY_F11, F12 = KEY_F12
 }
 
 -- 特效函数
