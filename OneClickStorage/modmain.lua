@@ -9,6 +9,106 @@ local support_portablecellar = GetModConfigData("support_portablecellar")
 local support_chest = GetModConfigData("support_chest")
 local support_icebox = GetModConfigData("support_icebox")
 local only_floor_items = GetModConfigData("only_floor_items")
+local enable_slot_lock = GetModConfigData("enable_slot_lock")
+
+-- ===== 格子锁定 Slot Lock（中键锁定物品栏某格，使其不入箱）=====
+-- 锁定状态：{ [槽位号] = true }，按 (存档槽, 人物) 维度持久化
+-- Locked slots are skipped during one-click storage; persisted per (save slot, character).
+local locked_slots = {}
+local persistence_filename = nil
+local _ocs_middle_registered = false
+-- 中键常量（若该版本缺失 MOUSEBUTTON_MIDDLE，回退到常见值 3）
+local OCS_MOUSE_MIDDLE = MOUSEBUTTON_MIDDLE or 3
+
+-- 持久化：把 locked_slots 序列化写入文件（文件名已编码 存档槽+人物）
+local function ocs_save_locks()
+    if not persistence_filename then return end
+    TheSim:SetPersistentString(persistence_filename, json.encode(locked_slots), false, nil)
+end
+
+-- 持久化：异步读取并归一化为数字键
+local function ocs_load_locks(filename, onload)
+    TheSim:GetPersistentString(filename, function(str)
+        local data = {}
+        if str then
+            local ok, decoded = pcall(json.decode, str)
+            if ok and type(decoded) == "table" then
+                for k in pairs(decoded) do
+                    data[tonumber(k) or k] = true
+                end
+            end
+        end
+        onload(data)
+    end, false)
+end
+
+-- widget 是否获得焦点（优先用方法，回退到 focus 字段）
+local function ocs_has_focus(w)
+    if w.HasFocus then return w:HasFocus() end
+    return w.focus == true
+end
+
+-- 在物品栏 widget 树里查找当前获得焦点(focus)的 InvSlot（带 num 字段）
+local function find_focused_invslot(widget)
+    if not widget then return nil end
+    if widget.num ~= nil and ocs_has_focus(widget) then
+        return widget
+    end
+    if widget.children then
+        for _, c in ipairs(widget.children) do
+            local hit = find_focused_invslot(c)
+            if hit then return hit end
+        end
+    end
+    return nil
+end
+
+-- 取得物品栏 InventoryBar widget（player.HUD.controls.inv 或 player.components.playerhud.controls.inv）
+local function ocs_get_invbar()
+    local player = GetPlayer()
+    if not player then return nil end
+    local hud = player.HUD or (player.components and player.components.playerhud)
+    return hud and hud.controls and hud.controls.inv
+end
+
+-- 中键切换某格的锁定状态
+local function ocs_toggle_lock()
+    if not enable_slot_lock then return end
+    local slot = find_focused_invslot(ocs_get_invbar())
+    if not slot or slot.num == nil then return end
+
+    local n = slot.num
+    if locked_slots[n] then
+        locked_slots[n] = nil
+    else
+        locked_slots[n] = true
+    end
+    ocs_save_locks()
+
+    local player = GetPlayer()
+    if player and player.components.talker then
+        player.components.talker:Say(locked_slots[n] and "已锁定该格（不入箱）" or "已解锁该格")
+    end
+end
+
+-- 视觉提示：锁定格整体偏红；每 0.5s 重应用以抗物品栏刷新/重排
+local function ocs_apply_visuals()
+    local inv = ocs_get_invbar()
+    if not inv then return end
+    local function walk(w)
+        if w and w.num ~= nil then
+            if locked_slots[w.num] then
+                w:SetMultColour(1, 0.3, 0.3, 1)
+            else
+                w:SetMultColour(1, 1, 1, 1)
+            end
+        end
+        if w and w.children then
+            for _, c in ipairs(w.children) do walk(c) end
+        end
+    end
+    walk(inv)
+end
 
 -- 按键映射表
 local key_map = {
@@ -187,11 +287,13 @@ local function OneClickStorage(container, include_floor_items)
         end
     end
 
-    -- 1. 处理玩家物品栏
+    -- 1. 处理玩家物品栏（跳过被锁定的格子）
     if not only_floor_items then
         local player_slots = player.components.inventory.itemslots
         for slot_num, item in pairs(player_slots) do
-            StoreItem(item, player.components.inventory, slot_num)
+            if not locked_slots[slot_num] then
+                StoreItem(item, player.components.inventory, slot_num)
+            end
         end
     end
 
@@ -243,6 +345,29 @@ end
 -- 添加按键监听
 AddPlayerPostInit(function(inst)
     if inst == GetPlayer() then
+        -- ===== 格子锁定初始化 Slot Lock init（仅当功能开启）=====
+        if enable_slot_lock then
+            local save_slot = (SaveGameIndex and SaveGameIndex.GetCurrentSaveSlot and SaveGameIndex:GetCurrentSaveSlot())
+                          or (SaveGameIndex and SaveGameIndex.current_slot) or 0
+            local character = inst.prefab or "unknown"
+            persistence_filename = string.format("ocs_slotlocks_%s_%s", tostring(save_slot), tostring(character))
+
+            ocs_load_locks(persistence_filename, function(data)
+                locked_slots = data
+            end)
+
+            -- 注册中键切换（只注册一次）
+            if not _ocs_middle_registered then
+                _ocs_middle_registered = true
+                TheInput:AddMouseButtonHandler(OCS_MOUSE_MIDDLE, true, function()
+                    ocs_toggle_lock()
+                end)
+            end
+
+            -- 视觉提示：每 0.5s 重应用，锁定格偏红
+            inst:DoPeriodicTask(0.5, ocs_apply_visuals)
+        end
+
         TheInput:AddKeyDownHandler(key_map[storage_key], function()
             local player = GetPlayer()
             if not player then return end
